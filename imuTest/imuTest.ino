@@ -26,11 +26,14 @@ uint32_t Result_2nd;
 uint32_t Result_hi;
 int32_t Result;
 double Angle1;
+double Angle2;
+double Angle_pred;
 double Time0;
 double Time1;
 double Time2;
-double Angle2;
-double Speed;
+double Speed1;
+double Speed2;
+double corrFactor;
 
 // for incoming serial data
 uint16_t incomingByte = 0;
@@ -51,10 +54,13 @@ void setup()
 	Result =0;
 	Angle1 = 0;
 	Angle2 = 0;
+	Angle_pred = 0;
 	Time0 = 0;
 	Time1 = 0;
 	Time2 = 0;
-	Speed = 0;
+	Speed1 = 0;
+	Speed2 = 0;
+    corrFactor = 0;
 
     //Configure Encoder Counter
     // EN1=1
@@ -92,7 +98,7 @@ void setup()
     pinMode(D7,INPUT);
 		
     Serial.begin(9600);
-    Serial.println("Enter 's' or 'S' to start, 'r' or 'R' to reset");
+    Serial.println("Enter 's' or 'S' to start, 'r' or 'R' to reset.");
 }
 
 
@@ -103,7 +109,7 @@ void loop()
         oldByte = incomingByte;
         incomingByte = Serial.read();
 		if(incomingByte != 114 && incomingByte != 82 && incomingByte!=115 && incomingByte!=83){
-            Serial.println("Wrong Input: Enter 's' or 'S' to start, 'r' or 'R' to reset");
+            Serial.println("Wrong Input: Enter 's' or 'S' to start, 'r' or 'R' to reset.");
             incomingByte = oldByte;
         }
         else if(incomingByte==115 || incomingByte==83){
@@ -130,9 +136,13 @@ void loop()
         Result =0;
         Angle1 = 0;
         Angle2 = 0;
-        Speed = 0;
+        Angle_pred = 0;
+        Speed1 = 0;
+        Speed2 = 0;
+        corrFactor = 0;
         incomingByte = 0;
         Serial.println("Done.");
+        Serial.println("Enter 's' or 'S' to start.");
     }
 
 	// Start Reading once 's' or 'S' is entered
@@ -172,16 +182,25 @@ void loop()
 		Result = (int32_t) ((Result_hi << 24) + (Result_2nd << 16) + (Result_3rd << 8) + Result_lo);
 		Angle2 = Angle1;
 		Time2 = Time1;
-		Angle1 = getAngle(Result);
+        Speed2 = Speed1;
+
+		Angle1 = getAngle(Result) + corrFactor;
 		Time1 = (double) micros();
-		Speed = getSpeed(Angle1,Angle2,Time1,Time2);
+		Speed1 = getSpeed(Angle1,Angle2,Time1,Time2);
+        
+        //Correct erroneous readings
+        if(Speed1 > Speed2 + 30. || Speed1 < Speed2 - 30.){
+            Speed1 = Speed2;
+            Angle_pred = Angle2 + Speed1*(Time1 - Time2)/1e6;
+            corrFactor += Angle_pred - Angle1;
+            Angle1 = Angle_pred;
+        }
+
 		Serial.print(Angle1);
 		Serial.print(", ");
-		Serial.print(Speed);
+		Serial.print(Speed1);
 		Serial.print(", ");
-		Serial.print(Time1 - Time0);
-		Serial.print(", ");
-		Serial.println(Time2 - Time0);
+		Serial.println(corrFactor);
     }
 }
 
@@ -274,3 +293,5 @@ double getSpeed(double angle1, double angle2, double time1, double time2)
 {
 	return (angle1 - angle2)*1.e6/(time1 - time2);
 }
+
+

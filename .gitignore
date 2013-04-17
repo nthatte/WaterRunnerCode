@@ -6,6 +6,7 @@
 *.hex
 *.mk
 *.d
+*/build-mega2560/*
 
 # Compiled Dynamic libraries
 *.so
