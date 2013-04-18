@@ -6,6 +6,7 @@
 *.hex
 *.mk
 *.d
+*.pyc
 */build-mega2560/*
 
 # Compiled Dynamic libraries
@@ -19,3 +20,4 @@
 
 # Temp Files
 *.swp
+*.DS_Store
