@@ -21,7 +21,7 @@ def getData():
 global Arduino
 try:
     Arduino = serial.Serial(
-        port='/dev/tty.usbmodem1421',
+        port='/dev/ttyACM0',
         baudrate=9600,
         bytesize=serial.EIGHTBITS,
         parity=serial.PARITY_NONE,
@@ -44,33 +44,34 @@ except serial.serialutil.SerialException:
 plot_data = getData()
 print(plot_data)
 
+numSamples = 400
 #create figure
 fig = plt.figure()
 axes = fig.add_subplot(111)
-axes.set_title('Motor Velocity [r/s]', size=12)
-line, = plt.plot([],[])
-plt.show(block = False)
+line, = plt.plot(plot_data[:,0],plot_data[:,1])
+axes.set_xlim(0,numSamples/100 + 2)
+axes.set_ylim(-1,1)
+plt.ion()
+plt.show()
 
-time.sleep(0.1)
-#capture 10s of data
-numSamples = 100
 s = 0
 while s < numSamples:
-    data = getData()
-    plot_data = np.append(plot_data,data, axis = 0)
-    plt.clf()
-    line, = plt.plot(plot_data[:,0],plot_data[:,1])
-    plt.show(block = False)
-    '''
-    line.set_xdata(plot_data[:,0])
-    line.set_ydata(plot_data[:,1])
-    plt.draw()
-    plt.pause(0.01)
-    '''
-    print(data)
-    s = s + 1
+	data = getData()
+	plot_data = np.append(plot_data,data, axis = 0)
+	'''
+	plt.clf()
+	line, = plt.plot(plot_data[:,0],plot_data[:,1])
+	plt.show()
+	'''
+	line.set_xdata(plot_data[:,0])
+	line.set_ydata(plot_data[:,1])
+	plt.draw()
+	s = s + 1
 Arduino.close()
-plt.close()
+
 plt.ioff()
+plt.clf()
 plt.plot(plot_data[:,0],plot_data[:,1])
+axes.set_xlim(0,3)
+axes.set_ylim(-1,1)
 plt.show()
