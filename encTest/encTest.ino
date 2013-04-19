@@ -11,6 +11,7 @@
 #define RSTY 30
 #define X_Y 31
 
+#define serialPer 10000.
 
 //Encoder counter results
 uint32_t Result_lo;
@@ -25,6 +26,8 @@ double Time1;
 double Time2;
 double Speed1;
 double Speed2;
+
+double serialLastTime;
 
 //constants and variables for error correction
 #define ERR_DV_THRESH 30
@@ -57,6 +60,8 @@ void setup()
 	Speed1 = 0;
 	Speed2 = 0;
     corrFactor = 0;
+
+	serialLastTime = 0;
 
     //Configure Encoder Counter
     // EN1=1
@@ -93,6 +98,7 @@ void setup()
 
 void loop()
 {
+	delay(10);
     // if there is an incoming byte read it
     if (Serial.available() > 0) {
         oldByte = incomingByte;
@@ -130,6 +136,7 @@ void loop()
         Speed2 = 0;
         corrFactor = 0;
         incomingByte = 0;
+		serialLastTime = 0;
         Serial.println("Done.");
         Serial.println("Enter 's' or 'S' to start.");
     }
@@ -185,13 +192,19 @@ void loop()
             corrFactor += Angle_pred - Angle1;
             Angle1 = Angle_pred;
         }
-
-		//Serial.print(Angle1);
-		//Serial.print(", ");
-		Serial.print(Speed1);
-		Serial.print("  ");
-		Serial.println(Time1/1e6);
-		//Serial.println(corrFactor);
+		
+		if((Time1 - serialLastTime)  > serialPer){
+			Serial.print(Time1/1e6);
+			Serial.print("  ");
+			Serial.println(Speed1);
+			/*
+			Serial.print("  ");
+			Serial.print(Angle1);
+			Serial.print("  ");
+			Serial.println(corrFactor);
+			*/
+			serialLastTime = Time1;
+		}
     }
 }
 
@@ -223,5 +236,3 @@ double getSpeed(double angle1, double angle2, double time1, double time2)
 {
 	return (angle1 - angle2)*1.e6/(time1 - time2);
 }
-
-

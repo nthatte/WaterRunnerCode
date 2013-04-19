@@ -1,7 +1,10 @@
+#!/usr/bin/env python
+
 import serial
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import sys
 
 def getData():
     while True:
@@ -12,7 +15,10 @@ def getData():
                 time.sleep(.005)
                 continue
             nums = raw_lines.strip().split()
-            numArray = np.array([float(i) for i in nums], ndmin = 2)
+            numArray = np.array([float(i) for i in nums],ndmin = 2)
+            if numArray.shape[1] != 4:
+                time.sleep(.005)
+                continue
             return numArray
         except ValueError:
             print 'bogus data',raw_lines
@@ -21,8 +27,8 @@ def getData():
 global Arduino
 try:
     Arduino = serial.Serial(
-        port='/dev/ttyACM0',
-        baudrate=9600,
+        port='/dev/tty.usbmodem1421',
+        baudrate=115200,
         bytesize=serial.EIGHTBITS,
         parity=serial.PARITY_NONE,
         stopbits=serial.STOPBITS_ONE,
@@ -42,36 +48,34 @@ except serial.serialutil.SerialException:
 
 #start capturing lines
 plot_data = getData()
-print(plot_data)
 
-numSamples = 400
 #create figure
+window = 20
 fig = plt.figure()
 axes = fig.add_subplot(111)
 line, = plt.plot(plot_data[:,0],plot_data[:,1])
-axes.set_xlim(0,numSamples/100 + 2)
-axes.set_ylim(-1,1)
+axes.set_xlim(plot_data[-1,0] - window/2,plot_data[-1,0] + window/2)
+axes.set_ylim(0, 60)
 plt.ion()
 plt.show()
 
-s = 0
-while s < numSamples:
-	data = getData()
-	plot_data = np.append(plot_data,data, axis = 0)
-	'''
-	plt.clf()
-	line, = plt.plot(plot_data[:,0],plot_data[:,1])
-	plt.show()
-	'''
-	line.set_xdata(plot_data[:,0])
-	line.set_ydata(plot_data[:,1])
-	plt.draw()
-	s = s + 1
-Arduino.close()
-
-plt.ioff()
-plt.clf()
-plt.plot(plot_data[:,0],plot_data[:,1])
-axes.set_xlim(0,3)
-axes.set_ylim(-1,1)
-plt.show()
+while True:
+    try:
+        data = getData()
+        plot_data = np.append(plot_data,data, axis = 0)
+        axes.set_xlim(plot_data[-1,0] - window/2,plot_data[-1,0] + window/2)
+        line.set_xdata(plot_data[:,0])
+        line.set_ydata(plot_data[:,1])
+        print(data)
+        plt.draw()
+    except KeyboardInterrupt:
+        Arduino.close()
+    
+        plt.ioff()
+        plt.clf()
+        plt.plot(plot_data[:,0],plot_data[:,1])
+        try:
+            plt.show()
+        except KeyboardInterrupt:
+            exit(0)
+        exit(0)
