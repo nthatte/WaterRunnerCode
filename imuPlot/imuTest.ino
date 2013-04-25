@@ -49,7 +49,7 @@ void loop()
 {	
     getTaredQuaternion(rawQuatResponse);
     sendToComp(quaternion, 16); 
-    delay(100);
+    delay(50);
 }
 
 void setResponseHeader(const uint8_t *responseHeaderConfig)

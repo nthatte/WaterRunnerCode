@@ -83,10 +83,11 @@ while True:
     try:
         #update plot
         (curtime, quat) = getData()
+
         x1 = qv_mult(quat, x)
         y1 = qv_mult(quat, y)
         z1 = qv_mult(quat, z)
-
+        
         linex.set_xdata([0, x1[0]])
         linex.set_ydata([0, x1[1]])
         linex.set_3d_properties(zs = [0, x1[2]])
