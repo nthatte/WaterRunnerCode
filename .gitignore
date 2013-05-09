@@ -7,7 +7,7 @@
 *.mk
 *.d
 *.pyc
-*/build-mega2560/*
+build-mega2560/
 
 # Compiled Dynamic libraries
 *.so
