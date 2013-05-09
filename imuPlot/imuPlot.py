@@ -78,7 +78,7 @@ axes.set_ylabel('y');
 axes.set_zlabel('z');        
 plt.ion()
 plt.show()
-
+j = 0
 while True:
     try:
         #update plot
@@ -100,6 +100,7 @@ while True:
         linez.set_ydata([0, z1[1]])
         linez.set_3d_properties(zs = [0, z1[2]])
 
+        j += 1
         plt.draw()
     except KeyboardInterrupt:
         exit(0)
