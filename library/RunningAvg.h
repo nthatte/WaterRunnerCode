@@ -1,46 +1,43 @@
 /*
 RunningAvg.h
-Class implementing running avergae for smoothing measurements
+Class implementing Filter interface to smooth measurements using a running average
 */
 
+#ifndef RUNNING_AVG_H
+#define RUNNING_AVG_H
+
+#include "Filter.h"
 #include "QueueArray.h"
 
 template<typename T>
-class RunningAvg
+class RunningAvg: public Filter<T>
 {
 	private:
-		QueueArray<T> readings; //hold readings within window in a queue
-		T total;                //total of readings in window
-		uint8_t windowSize;
-	
+		T total;              //total of readings in window
+		T avgValue;           //Current Filtered measurement
+		QueueArray<T> values; //hold readings within window in a queue
+        const uint8_t windowSize;
+	    
 	public:
-        RunningAvg(uint8_t wSize);
-		T newReading(T reading);
+        RunningAvg(const uint8_t wSize):windowSize(wSize), total(0), avgValue(0)
+        {}
 
+        //Update running average with a new measurement
+		virtual T Update(const T value)
+        {
+            total += value;
+            values.push(value);
+            if(values.count() > windowSize){
+                total -= values.pop();
+            }
+
+            avgValue = total/values.count();
+            return avgValue;
+        }
+        
         //returns average of readings in window
-		T getAvg(){
-			return total/readings.count();
+		virtual T GetFilteredValue(){
+			return avgValue;
 		}
 };
-
-//initialize running average class (constructor)
-template<typename T>
-RunningAvg<T>::RunningAvg(uint8_t wSize)
-{
-    windowSize = wSize;
-    total = 0;
-}
-
-//Add a new measurment to window and remove oldest measurement.
-//Returns: new average
-template<typename T>
-T RunningAvg<T>::newReading(T newReading)
-{
-	total += newReading;
-	readings.push(newReading);
-	if(readings.count() > windowSize){
-		total -= readings.pop();
-	}
-
-	return getAvg();
-}
+#endif
