@@ -1,3 +1,6 @@
 [submodule "Arduino-Makefile"]
 	path = Arduino-Makefile
 	url = https://github.com/mjoldfield/Arduino-Makefile.git
+[submodule "trigint"]
+	path = trigint
+	url = ./trigint
