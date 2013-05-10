@@ -5,15 +5,17 @@
 #include <arduino.h>
 #include <stdint.h>
 #include "Filter.h"
+#include "../trigint/Source/trigint.h"
 class Encoder
 {   
     protected:
         /*
-        Angles stored in units of milliradians
-        Speed stored in units of milliradians/second
+        Angles stored in 16,384 units per rev
+        Speed stored in above angle units/second
         */
-        int32_t angleNew;
-        int32_t angleOld;
+        trigint_angle_t angleNew;
+        trigint_angle_t angleOld;
+        int32_t dAngle;
         uint32_t timeNew;
         uint32_t timeOld;
         int32_t speedNew;
@@ -27,16 +29,15 @@ class Encoder
         {}
 
         /*
-        Sample the encoder and return measured angle in milliradians.
-
         Implementation of MeasureAngle() function will be different for each
         encoder counter chip. Hence it is a virtual function.
         */
-        virtual int32_t MeasureAngle() = 0;
+        virtual trigint_angle_t MeasureAngle() = 0;
 
         /*
-        Get a speed measurement taking finite difference between new and last angle. 
-        Return filtered result
+        Get a speed measurement by taking finite difference between new and last angle. 
+        Speed can only be positive so direction should be set correctly
+        Returns filtered result
         */
         int32_t MeasureSpeed()
         {
@@ -45,13 +46,18 @@ class Encoder
            
             timeNew = micros();
             MeasureAngle(); //Will update angleNew as well
-            speedNew = static_cast<int32_t>(((angleNew - angleOld)*1e6)/(timeNew - timeOld));
+            dAngle = static_cast<int16_t>(angleNew - angleOld);
+
+            //handle case where angleNew is less than angleOld because of rollover
+            dAngle = (dAngle < (-1*TRIGINT_ANGLES_PER_CYCLE/2)) ? 
+                (dAngle + TRIGINT_ANGLES_PER_CYCLE) : dAngle;
+            speedNew = dAngle*1e6/(timeNew - timeOld);
             
             return speedFilter->Update(speedNew);
             
         }
 
-        int32_t GetAngle(){return angleNew;}
+        trigint_angle_t GetAngle(){return angleNew;}
         int32_t GetSpeed(){return speedFilter->GetFilteredValue();}
 
 };

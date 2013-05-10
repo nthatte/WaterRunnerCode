@@ -1,4 +1,7 @@
-//subclass to get angle measurement from hctl-2032-sc encoder counter
+/**
+ *  Class to setup pins and get angle measurments from
+ *  HCTL-2032-SC encoder counter 
+ */
 
 #ifndef HCTL_2032_SC_H
 #define HCTL_2032_SC_H
@@ -12,32 +15,38 @@ class HCTL2032SC: public Encoder
 {
     private:
         const struct HCTL2032SCPinList pins;
-        const uint8_t xORy;    //0 = x-axis, 1 = y-axis
+        const uint8_t xORy;      //0 = x-axis, 1 = y-axis
+        const int8_t direction;  //1 = forward, -1 = backwards
         uint32_t resultLo;
         uint32_t result3rd;
         uint32_t result2nd;
         uint32_t resultHi;
         int32_t  result;
-
+        uint32_t resultSat;
+        
         uint8_t  GetByte();
+
     public:
         HCTL2032SC(const struct HCTL2032SCPinList &PinList, const uint8_t &whichAxis,
-            Filter<int32_t> *filter);
+            const int8_t &cDirection, Filter<int32_t> *filter);
 
-        //sample encoder and compute angle in milliradians, update angleNew, and return value
-        virtual int32_t MeasureAngle();
+        virtual trigint_angle_t MeasureAngle();
 };
 
+/**
+ *  Constructs new encoder counter objects. 
+ *  Sets pins from pin list struct
+ */
 HCTL2032SC::HCTL2032SC(const struct HCTL2032SCPinList &PinList, const uint8_t &whichAxis,
-    Filter<int32_t> *filter)
-    : pins(PinList), xORy(whichAxis), Encoder(filter),
+    const int8_t &cDirection, Filter<int32_t> *filter)
+    : pins(PinList), xORy(whichAxis), direction(cDirection), Encoder(filter),
         resultLo(0), result3rd(0), result2nd(0), resultHi(0), result(0)
 {
-    //Configure Encoder Counter
+    // Configure Encoder Counter
     // Define port as input
     *(pins.DDRREG) = B00000000;
 
-    //set count mode to 4x
+    // set count mode to 4x
     pinMode(pins.EN1,OUTPUT);
     digitalWrite(pins.EN1,HIGH);
     pinMode(pins.EN2,OUTPUT);
@@ -60,8 +69,10 @@ HCTL2032SC::HCTL2032SC(const struct HCTL2032SCPinList &PinList, const uint8_t &w
     pinMode(pins.SEL2,OUTPUT);   
 }
         
-//sample encoder and compute angle in milliradians, update angleNew, and return value
-int32_t HCTL2032SC::MeasureAngle()
+/**
+ *  sample encoder and compute angle in milliradians, update angleNew, and return value
+ */
+trigint_angle_t HCTL2032SC::MeasureAngle()
 {
     //choose X or Y axis
 	digitalWrite(pins.XY,xORy);
@@ -91,13 +102,17 @@ int32_t HCTL2032SC::MeasureAngle()
 	digitalWrite(pins.OE,HIGH);
 	
 	//Combine Bytes to get 32 bit encoder count
-	result = (int32_t) ((resultHi << 24) + (result2nd << 16) + 
-		(result3rd << 8) + resultLo);
+	result = direction*((int32_t) ((resultHi << 24) + (result2nd << 16) + 
+		(result3rd << 8) + resultLo));
 
-    //convert encoder ticks to milliradians, update angleNew, and return value
-    const int16_t twoPIx1000 = 6283;    //two pi times 1000 to return angle in milliradians
-    const int16_t countsPerRev = 1440;  //number of encoder ticks per revolution
-    angleNew = result*twoPIx1000/countsPerRev;
+    /*
+    saturate result so it is between 0 and countsPerRev and positive 
+    otherwise result can be small negative or very large
+    and would cause over flow when converted to angle units 
+    */
+    const int16_t countsPerRev = 1440;   //number of encoder ticks per revolution
+    resultSat = (result<0) ? 0 : result%countsPerRev;
+    angleNew = (resultSat*TRIGINT_ANGLES_PER_CYCLE)/countsPerRev; 
     return angleNew;
 }
 
@@ -105,7 +120,8 @@ uint8_t  HCTL2032SC::GetByte()
 {
     uint8_t byteOld;
 	uint8_t byteNew;
-
+    
+    //Request byte until stable
     byteOld = *(pins.PINREG);
     byteNew = *(pins.PINREG);
 
