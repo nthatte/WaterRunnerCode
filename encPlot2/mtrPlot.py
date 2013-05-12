@@ -16,10 +16,11 @@ def getData():
                 continue
             nums = raw_lines.strip().split()
             numArray = np.array([float(i) for i in nums],ndmin = 2)
-            numArray[:,0] = numArray[:,0]/1000
-            numArray[:,1] = numArray[:,1]*2*np.pi/0x4000
-            numArray[:,2] = numArray[:,2]*360/0x4000
-            if numArray.shape[1] != 3: #expect three numbers
+            numArray[:,0] = numArray[:,0]/1e6
+            numArray[:,1] = numArray[:,1]*2*np.pi*1e6/0x4000/1024
+            numArray[:,4] = numArray[:,4]
+
+            if numArray.shape[1] != 5: #expect three numbers
                 time.sleep(.005)
                 continue
             return numArray

@@ -28,7 +28,7 @@ class HCTL2032SC: public Encoder
 
     public:
         HCTL2032SC(const struct HCTL2032SCPinList &PinList, const uint8_t &whichAxis,
-            const int8_t &cDirection, Filter<int32_t> *filter);
+            const int8_t &cDirection, Filter<int16_t> *filter);
 
         virtual trigint_angle_t MeasureAngle();
 };
@@ -38,7 +38,7 @@ class HCTL2032SC: public Encoder
  *  Sets pins from pin list struct
  */
 HCTL2032SC::HCTL2032SC(const struct HCTL2032SCPinList &PinList, const uint8_t &whichAxis,
-    const int8_t &cDirection, Filter<int32_t> *filter)
+    const int8_t &cDirection, Filter<int16_t> *filter)
     : pins(PinList), xORy(whichAxis), direction(cDirection), Encoder(filter),
         resultLo(0), result3rd(0), result2nd(0), resultHi(0), result(0)
 {
