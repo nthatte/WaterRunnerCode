@@ -9,13 +9,13 @@
 // Define the pins to use with the counter
 HCTL2032SCPinList encPins;
 
-//serial output period in milliseconds
-const uint16_t serialPer = 5e4;
+//serial output period in microsconds
+const uint16_t serialPer = 2e4;
 uint32_t time;
 uint32_t serialLastTime;
 
 //declare encoder counter and its filter
-const uint8_t windowSize = 100;
+const uint8_t windowSize = 10; //in milliseconds
 const uint8_t axis = 1;
 const int8_t direction = 1;
 RunningAvg<int_vel_t> *speedFilter = 0; 
@@ -98,7 +98,21 @@ void setup()
 ISR(TIMER1_COMPA_vect)
 {
     encoder1->MeasureSpeed();
-    pwrPID = PIDcntrl->Calculate(desSpeed,encoder1->GetSpeed());
+    /*
+    if(encoder1->GetAngle() < 0x2000)
+    {
+        desSpeedRad = 40;
+        pwrFF = feedForward(desSpeedRad);
+        desSpeed = speedConv(desSpeedRad);
+    }
+    else
+    {
+        desSpeedRad = 40;
+        pwrFF = feedForward(desSpeedRad);
+        desSpeed = speedConv(desSpeedRad);
+    }
+    */
+    pwrPID = PIDcntrl->Calculate(desSpeed,encoder1->GetSpeed(),pwr-pwrFF);
     pwr = pwrFF + pwrPID;
     if (pwr > 255)
     {
@@ -114,17 +128,22 @@ ISR(TIMER1_COMPA_vect)
 void loop()
 {	
     time = micros();
-	if((time - serialLastTime) > serialPer){
+	if((time - serialLastTime) > serialPer)
+    {
         cli();
         speed = encoder1->GetSpeed();
         angle = encoder1->GetAngle();
+        uint8_t pwr2 = pwr;
+        uint8_t pwrFF2 = pwrFF;
+        uint8_t pwrPID2 = pwrPID;
         sei();
-        if ((time > 3e6) && (desSpeedRad != 40))
+        if ((time > 3e6) && (desSpeedRad != 30))
         {
-            desSpeedRad = 40;
+            desSpeedRad = 30;
             int_vel_t temp = speedConv(desSpeedRad);
             cli();
             desSpeed = temp;
+            
             sei();
             pwrFF = feedForward(desSpeedRad);
         }
@@ -132,14 +151,16 @@ void loop()
 		Serial.print("  ");
         Serial.print(speed);
 		Serial.print("  ");
-		Serial.print(pwr);
+        Serial.print(pwr2);
 		Serial.print("  ");
-		Serial.print(pwrFF);
-        Serial.print("  ");
-		Serial.println(pwrPID);
+        Serial.print(pwrFF2);
+		Serial.print("  ");
+        Serial.println(pwrPID2);
+        //uint8_t checksum = static_cast<uint8_t>(time + speed);
+		//Serial.print("  ");
+        //Serial.println(checksum);
 
-
-		serialLastTime = time;
+        serialLastTime = time;
 	}
 }
 

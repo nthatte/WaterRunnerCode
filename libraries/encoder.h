@@ -62,7 +62,6 @@ class Encoder
             dAngle = (dAngle < (-1*(TRIGINT_ANGLES_PER_CYCLE>>1))) ? 
                 (dAngle + TRIGINT_ANGLES_PER_CYCLE) : dAngle;
             speedNew = ((dAngle << 10)/(timeNew - timeOld));
-            
             return speedFilter->Update(speedNew);
             
         }

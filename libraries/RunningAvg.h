@@ -13,7 +13,7 @@ template<typename T>
 class RunningAvg: public Filter<T>
 {
 	private:
-		T total;              //total of readings in window
+		int32_t total;              //total of readings in window
 		T avgValue;           //Current Filtered measurement
 		QueueArray<T> values; //hold readings within window in a queue
         const uint8_t windowSize;
