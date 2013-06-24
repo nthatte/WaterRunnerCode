@@ -7,15 +7,15 @@
 #include "../trigint/Source/trigint.h"
 
 // Define the pins to use with the counter
-HCTL2032SCPinList encPins;
+HCTL2032SC::pinList encPins;
 
 //serial output period in microsconds
-const uint16_t serialPer = 2e4;
+const uint16_t serialPer = 1e3;
 uint32_t time;
 uint32_t serialLastTime;
 
 //declare encoder counter and its filter
-const uint8_t windowSize = 10; //in milliseconds
+const uint8_t windowSize = 20; //in milliseconds
 const uint8_t axis = 1;
 const int8_t direction = 1;
 RunningAvg<int_vel_t> *speedFilter = 0; 
@@ -33,8 +33,8 @@ const uint8_t Kdi = 12;
 const uint8_t Kdd = 0;
 
 //declare controller and its filter
-int_vel_t speedConv(uint8_t speedRad);
-uint8_t feedForward(int_vel_t desSpeedRad);
+inline int_vel_t speedConv(uint8_t speedRad);
+inline uint8_t feedForward(int_vel_t desSpeedRad);
 
 uint8_t desSpeedRad = 0;
 int_vel_t desSpeed =  0;
@@ -98,7 +98,6 @@ void setup()
 ISR(TIMER1_COMPA_vect)
 {
     encoder1->MeasureSpeed();
-    /*
     if(encoder1->GetAngle() < 0x2000)
     {
         desSpeedRad = 40;
@@ -107,11 +106,10 @@ ISR(TIMER1_COMPA_vect)
     }
     else
     {
-        desSpeedRad = 40;
+        desSpeedRad = 35;
         pwrFF = feedForward(desSpeedRad);
         desSpeed = speedConv(desSpeedRad);
     }
-    */
     pwrPID = PIDcntrl->Calculate(desSpeed,encoder1->GetSpeed(),pwr-pwrFF);
     pwr = pwrFF + pwrPID;
     if (pwr > 255)
@@ -137,6 +135,7 @@ void loop()
         uint8_t pwrFF2 = pwrFF;
         uint8_t pwrPID2 = pwrPID;
         sei();
+        /*
         if ((time > 3e6) && (desSpeedRad != 30))
         {
             desSpeedRad = 30;
@@ -147,6 +146,7 @@ void loop()
             sei();
             pwrFF = feedForward(desSpeedRad);
         }
+        */
         Serial.print(time);
 		Serial.print("  ");
         Serial.print(speed);
@@ -165,14 +165,13 @@ void loop()
 }
 
 
-int_vel_t speedConv(uint8_t speedRad)
+inline int_vel_t speedConv(uint8_t speedRad)
 {
     const int32_t rad_s2cnt_1024us= 2670177; //trig int angles per cycle * 1024/2*pi
     return speedRad*rad_s2cnt_1024us/1e6;
 }
 
-uint8_t feedForward(int_vel_t desSpeedRad)
+inline uint8_t feedForward(int_vel_t desSpeedRad)
 {
     return desSpeedRad * 4;
 }
-

@@ -70,8 +70,8 @@ class Encoder
          * GetAngle() and GetSpeed() do not sample encoder again.
          * They simply return the last measured angle and speed respectively
          */
-        trigint_angle_t GetAngle(){return angleNew;}
-        int_vel_t GetSpeed(){return speedFilter->GetFilteredValue();}
+        inline trigint_angle_t GetAngle(){return angleNew;}
+        inline int_vel_t GetSpeed(){return speedFilter->GetFilteredValue();}
 
 };
 #endif

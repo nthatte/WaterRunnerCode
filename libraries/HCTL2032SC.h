@@ -9,12 +9,30 @@
 #include <stdint.h>
 #include <arduino.h>
 #include "encoder.h"
-#include "pinStructs.h"
 
 class HCTL2032SC: public Encoder
 {
+    public:
+        struct pinList
+        {
+            uint8_t SEL1;
+            uint8_t SEL2;
+            uint8_t EN1;
+            uint8_t EN2;
+            uint8_t OE;
+            uint8_t RST;
+            uint8_t XY;
+            volatile uint8_t *PINREG;
+            volatile uint8_t *DDRREG;
+        };
+
+        HCTL2032SC(const pinList &PinList, const uint8_t &whichAxis,
+            const int8_t &cDirection, Filter<int16_t> *filter);
+
+        virtual trigint_angle_t MeasureAngle();
+
     private:
-        const struct HCTL2032SCPinList pins;
+        const pinList pins;
         const uint8_t xORy;      //0 = x-axis, 1 = y-axis
         const int8_t direction;  //1 = forward, -1 = backwards
         uint32_t resultLo;
@@ -24,20 +42,14 @@ class HCTL2032SC: public Encoder
         int32_t  result;
         uint32_t resultSat;
         
-        uint8_t  GetByte();
-
-    public:
-        HCTL2032SC(const struct HCTL2032SCPinList &PinList, const uint8_t &whichAxis,
-            const int8_t &cDirection, Filter<int16_t> *filter);
-
-        virtual trigint_angle_t MeasureAngle();
+        inline uint8_t  GetByte();
 };
 
 /**
  *  Constructs new encoder counter objects. 
  *  Sets pins from pin list struct
  */
-HCTL2032SC::HCTL2032SC(const struct HCTL2032SCPinList &PinList, const uint8_t &whichAxis,
+HCTL2032SC::HCTL2032SC(const pinList &PinList, const uint8_t &whichAxis,
     const int8_t &cDirection, Filter<int16_t> *filter)
     : pins(PinList), xORy(whichAxis), direction(cDirection), Encoder(filter),
         resultLo(0), result3rd(0), result2nd(0), resultHi(0), result(0)
@@ -116,22 +128,17 @@ trigint_angle_t HCTL2032SC::MeasureAngle()
     return angleNew;
 }
 
-uint8_t  HCTL2032SC::GetByte()
+inline uint8_t  HCTL2032SC::GetByte()
 {
     uint8_t byteOld;
 	uint8_t byteNew;
     
     //Request byte until stable
-    byteOld = *(pins.PINREG);
-    byteNew = *(pins.PINREG);
-
-    if(byteOld == byteNew)
-	{	
-		return byteNew;
-	}
-	else
-	{   
-		return HCTL2032SC::GetByte();
-	}
+    do{
+        byteOld = *(pins.PINREG);
+        byteNew = *(pins.PINREG);
+    }while (byteOld != byteNew);
+    	
+    return byteNew;
 }
 #endif
