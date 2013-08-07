@@ -2,7 +2,6 @@
 #include "../libraries/TypeDefs.h"
 #include "../libraries/RunningAvg.h"
 #include "../libraries/HCTL2032SC.h"
-#include "../libraries/pinStructs.h"
 #include "../libraries/PID.h"
 #include "../trigint/Source/trigint.h"
 
@@ -16,7 +15,7 @@ uint32_t serialLastTime;
 
 //declare encoder counter and its filter
 const uint8_t windowSize = 20; //in milliseconds
-const uint8_t axis = 1;
+const uint8_t axis = 0;
 const int8_t direction = 1;
 RunningAvg<int_vel_t> *speedFilter = 0; 
 HCTL2032SC *encoder1 = 0;
@@ -42,6 +41,8 @@ RunningAvg<int_accel_t> *accelFilter = 0;
 PID *PIDcntrl = 0;
 
 uint8_t mtrPin;
+uint8_t mtrIn1;
+uint8_t mtrIn2;
 int16_t pwrPID;
 int16_t pwrFF;
 int16_t pwr;
@@ -64,13 +65,11 @@ void setup()
     TIMSK1 |= (1 << OCIE1A);	// enable timer compare interrupt
 			
     //assign encoder pins and registers and create encoder object
-    encPins.SEL1 = 36;
-    encPins.SEL2 = 34;
-    encPins.EN1 = 33;
-    encPins.EN2 = 32;
-    encPins.OE = 37;
-    encPins.RST = 30;
-    encPins.XY = 31;
+    encPins.SEL1 = 30;
+    encPins.SEL2 = 31;
+    encPins.OE = 32;
+    encPins.RST = 34;
+    encPins.XY = 35;
     encPins.PINREG = &PINA;
     encPins.DDRREG = &DDRA;
 
@@ -81,8 +80,15 @@ void setup()
     accelFilter = new RunningAvg<int_accel_t>(windowSize);
     PIDcntrl = new PID(Knp,Kni,Knd,Kdp,Kdi,Kdd,0,desSpeed,accelFilter);
     
-    mtrPin = 10;
+    //setup motor
+    mtrPin = 2;
+    mtrIn1 = 14;
+    mtrIn2 = 15;
     pinMode(mtrPin, OUTPUT);
+    pinMode(mtrIn1, OUTPUT);
+    pinMode(mtrIn2, OUTPUT);
+    digitalWrite(mtrIn1, HIGH);
+    digitalWrite(mtrIn2, LOW);
     pwr = 0;
     pwrPID = 0;
     pwrFF = 0;
@@ -106,7 +112,7 @@ ISR(TIMER1_COMPA_vect)
     }
     else
     {
-        desSpeedRad = 35;
+        desSpeedRad = 40;
         pwrFF = feedForward(desSpeedRad);
         desSpeed = speedConv(desSpeedRad);
     }
@@ -121,6 +127,7 @@ ISR(TIMER1_COMPA_vect)
         pwr = 0;
     }
     analogWrite(mtrPin,pwr);
+    analogWrite(mtrPin,255);
 }
 
 void loop()

@@ -17,8 +17,6 @@ class HCTL2032SC: public Encoder
         {
             uint8_t SEL1;
             uint8_t SEL2;
-            uint8_t EN1;
-            uint8_t EN2;
             uint8_t OE;
             uint8_t RST;
             uint8_t XY;
@@ -58,12 +56,6 @@ HCTL2032SC::HCTL2032SC(const pinList &PinList, const uint8_t &whichAxis,
     // Define port as input
     *(pins.DDRREG) = B00000000;
 
-    // set count mode to 4x
-    pinMode(pins.EN1,OUTPUT);
-    digitalWrite(pins.EN1,HIGH);
-    pinMode(pins.EN2,OUTPUT);
-    digitalWrite(pins.EN2,LOW);
-    
     // Select x OR y channel
     pinMode(pins.XY,OUTPUT);
     digitalWrite(pins.XY,xORy);
@@ -74,7 +66,7 @@ HCTL2032SC::HCTL2032SC(const pinList &PinList, const uint8_t &whichAxis,
     delay(10);
     digitalWrite(pins.RST,HIGH);
 
-    // make sure read mdoe is off to begin with
+    // make sure read mode is off to begin with
     pinMode(pins.OE,OUTPUT);
     digitalWrite(pins.OE,HIGH);
     pinMode(pins.SEL1,OUTPUT);
